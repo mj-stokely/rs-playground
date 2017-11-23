@@ -1,7 +1,7 @@
 package com.mjstokely.rsplayground;
 
 import android.app.Application;
-import android.support.v8.renderscript.RenderScript;
+import android.renderscript.RenderScript;
 
 import java.util.concurrent.Callable;
 

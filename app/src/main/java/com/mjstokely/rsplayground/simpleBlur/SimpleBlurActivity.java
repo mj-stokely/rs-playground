@@ -24,6 +24,5 @@ public class SimpleBlurActivity extends AppCompatActivity {
         binding.setData(new BlurData(ResourceUtil.fromResId(this,
                                                             R.raw.pod),
                                      20f));
-
     }
 }

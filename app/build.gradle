@@ -15,8 +15,6 @@ android {
         applicationId "com.mjstokely.rsplayground"
         minSdkVersion 21
         targetSdkVersion 26
-        renderscriptTargetApi 18
-        renderscriptSupportModeEnabled true
 
         versionCode 1
         versionName "1.0"
