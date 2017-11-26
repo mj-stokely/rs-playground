@@ -4,6 +4,7 @@ import com.mjstokely.rsplayground.R;
 import com.mjstokely.rsplayground.RsApplication;
 import com.mjstokely.rsplayground.databinding.ADynamicBlurBinding;
 import com.mystokely.rsplayground.ScriptC_viewportBlur;
+import com.mystokely.rsplayground.ScriptC_viewportLetterBox;
 
 import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
@@ -59,8 +60,8 @@ public class DynamicBlurActivity extends AppCompatActivity {
         Single<RenderScript> rs = RsApplication.getInstance().Rs;
         mEventHandler = new EventHandler(provideRenderAllocation(rs,
                                                                  provideSurfaceSingle(binding.textureView)),
-                                         provideScript(input,
-                                                       rs));
+                                         provideLetterBoxScript(input,
+                                                           rs));
     }
 
     @Override
@@ -69,13 +70,14 @@ public class DynamicBlurActivity extends AppCompatActivity {
         mDisposable = mEventHandler.getRenders()
                                    .subscribe();
 
-        Flowable.intervalRange(1, 20, 0, 500, TimeUnit.MILLISECONDS)
+        Flowable.intervalRange(1, 340, 0, 16, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<Long>() {
                     @Override
                     public void accept(Long aLong) throws Exception {
                         Log.d(TAG, "send blur request");
-                        mEventHandler.onBlurRequest();
+                        float yPercent = (float) aLong / 810;
+                        mEventHandler.onBlurRequest(yPercent, 0.6f);
                     }
                 });
     }
@@ -113,7 +115,23 @@ public class DynamicBlurActivity extends AppCompatActivity {
         return scaledInput;
     }
 
-    private Single<ScriptC_viewportBlur> provideScript(Bitmap inputBitmap, Single<RenderScript> rs) {
+    private Single<ScriptC_viewportLetterBox> provideLetterBoxScript(Bitmap inputBitmap, Single<RenderScript> rs) {
+        return Single.zip(rs,
+                          provideInputAllocation(rs,
+                                                 inputBitmap),
+                          new BiFunction<RenderScript, Allocation, ScriptC_viewportLetterBox>() {
+                              @Override
+                              public ScriptC_viewportLetterBox apply(RenderScript renderScript, Allocation in)
+                                  throws Exception {
+                                  ScriptC_viewportLetterBox script = new ScriptC_viewportLetterBox(renderScript);
+                                  script.set_inAllocation(in);
+                                  Log.d(TAG, "return script");
+                                  return script;
+                              }
+                          });
+    }
+
+    private Single<ScriptC_viewportBlur> provideBlurScript(Bitmap inputBitmap, Single<RenderScript> rs) {
         return Single.zip(rs,
                           provideInputAllocation(rs,
                                                  inputBitmap),

@@ -1,6 +1,7 @@
 package com.mjstokely.rsplayground.dynamicBlur;
 
 import com.mystokely.rsplayground.ScriptC_viewportBlur;
+import com.mystokely.rsplayground.ScriptC_viewportLetterBox;
 
 import android.renderscript.Allocation;
 import android.util.Log;
@@ -17,12 +18,12 @@ import io.reactivex.subjects.PublishSubject;
 
 public class EventHandler {
 
-    private PublishSubject<BlurRequest> mBlurRequests;
-    private Observable<BlurResult> mRenders;
+    private PublishSubject<ViewPortRequest> mBlurRequests;
+    private Observable<ViewPortResult> mRenders;
 
     public EventHandler(
         Single<Allocation> renderOut,
-        Single<ScriptC_viewportBlur> script) {
+        Single<ScriptC_viewportLetterBox> script) {
 
         mBlurRequests = PublishSubject.create();
 
@@ -30,33 +31,51 @@ public class EventHandler {
             .withLatestFrom(
                 script.toObservable(),
                 renderOut.toObservable(),
-                new Function3<BlurRequest,ScriptC_viewportBlur,Allocation,BlurResult>() {
+                new Function3<ViewPortRequest, ScriptC_viewportLetterBox, Allocation, ViewPortResult>() {
 
                     @Override
-                    public BlurResult apply(BlurRequest blurRequest, ScriptC_viewportBlur script, Allocation out) throws Exception {
-                        Log.d(DynamicBlurActivity.TAG, "call script kernel");
-                        script.forEach_blur(out);
+                    public ViewPortResult apply(ViewPortRequest viewPortRequest, ScriptC_viewportLetterBox script, Allocation out) throws Exception {
+
+                        int frameHeight = out.getType()
+                                             .getY();
+                        int blurUntil = (int) (frameHeight * viewPortRequest.YPercentOffsetFromTop);
+
+                        int blurAfter = (int) (frameHeight * viewPortRequest.YPercentOfTotalHeight) + blurUntil;
+                        Log.d(DynamicBlurActivity.TAG, "call script kernel"
+                            + "\nblur request: " + viewPortRequest.YPercentOffsetFromTop
+                            + "\nblurUntil: " + blurUntil
+                            + "\nblurAfter: " + blurAfter);
+
+                        script.set_yApplyUntil(blurUntil);
+                        script.set_yApplyAfter(blurAfter);
+                        script.forEach_root(out);
                         out.ioSend();
-                        return new BlurResult();
+                        return new ViewPortResult();
                     }
                 })
             .subscribeOn(Schedulers.computation());
     }
 
-    public void onBlurRequest() {
-        mBlurRequests.onNext(new BlurRequest());
+    public void onBlurRequest(float yPercentOffsetFromTop, float yPercentOfTotalHeight) {
+        mBlurRequests.onNext(new ViewPortRequest(yPercentOffsetFromTop, yPercentOfTotalHeight));
     }
 
-    public Observable<BlurResult> getRenders() {
+    public Observable<ViewPortResult> getRenders() {
         return mRenders;
     }
 
-    static class BlurRequest {
+    static class ViewPortRequest {
 
-        final float BlurRadius = 10f;
+        public final float YPercentOffsetFromTop;
+        public final float YPercentOfTotalHeight;
+
+        ViewPortRequest(float yPercentOffsetFromTop, float yPercentOfTotalHeight) {
+            YPercentOffsetFromTop = yPercentOffsetFromTop;
+            YPercentOfTotalHeight = yPercentOfTotalHeight;
+        }
     }
 
-    static class BlurResult{
+    static class ViewPortResult {
 
     }
 }
