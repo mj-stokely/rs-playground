@@ -21,9 +21,10 @@ public class EventHandler {
     private PublishSubject<ViewPortRequest> mBlurRequests;
     private Observable<ViewPortResult> mRenders;
 
+
     public EventHandler(
         Single<Allocation> renderOut,
-        Single<ScriptC_viewportLetterBox> script) {
+        Single<ScriptC_viewportBlur> script) {
 
         mBlurRequests = PublishSubject.create();
 
@@ -31,10 +32,10 @@ public class EventHandler {
             .withLatestFrom(
                 script.toObservable(),
                 renderOut.toObservable(),
-                new Function3<ViewPortRequest, ScriptC_viewportLetterBox, Allocation, ViewPortResult>() {
+                new Function3<ViewPortRequest, ScriptC_viewportBlur, Allocation, ViewPortResult>() {
 
                     @Override
-                    public ViewPortResult apply(ViewPortRequest viewPortRequest, ScriptC_viewportLetterBox script, Allocation out) throws Exception {
+                    public ViewPortResult apply(ViewPortRequest viewPortRequest, ScriptC_viewportBlur script, Allocation out) throws Exception {
 
                         int frameHeight = out.getType()
                                              .getY();
@@ -46,9 +47,11 @@ public class EventHandler {
                             + "\nblurUntil: " + blurUntil
                             + "\nblurAfter: " + blurAfter);
 
+
+
                         script.set_yApplyUntil(blurUntil);
                         script.set_yApplyAfter(blurAfter);
-                        script.forEach_root(out);
+                        script.forEach_blur(out);
                         out.ioSend();
                         return new ViewPortResult();
                     }

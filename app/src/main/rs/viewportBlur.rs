@@ -4,7 +4,7 @@
 rs_allocation inAllocation;
 int32_t yApplyUntil = 0;
 int32_t yApplyAfter = 10000;
-short blurRadius = 1;
+short blurRadius = 20;
 
 uchar4 RS_KERNEL blur(uint32_t x, uint32_t y){
   uchar4 in = rsGetElementAt_uchar4(inAllocation, x, y);
@@ -12,33 +12,26 @@ uchar4 RS_KERNEL blur(uint32_t x, uint32_t y){
     return in;
   }
 
-  uint32_t xMax = 1080;//rsAllocationGetDimX(inAllocation);
-  uint32_t yMax = 810;//rsAllocationGetDimY(inAllocation);
+  uint32_t xMax = rsAllocationGetDimX(inAllocation);
+  uint32_t yMax = rsAllocationGetDimY(inAllocation);
 
-  uchar4 pixelOut;
-  uint32_t r;
-  uint32_t g;
-  uint32_t b;
-  for (short ky = -blurRadius; ky <= blurRadius && ky <= yMax; ++ky){
-      //for (short kx = -blurRadius; kx <= blurRadius && kx <= xMax; ++kx){
-          if(ky < 0){
-            continue;
-          }
-          //if(kx < 0){
-            //continue;
-          //}
-          uchar4 blurWith = rsGetElementAt_uchar4(inAllocation, x, y+ky);
-          r = r + blurWith.r;
-          g = g + blurWith.g;
-          b = b + blurWith.b;
-      //}
+  uint4 sum = 0;
+  uint count = 0;
+  for (int yi = -blurRadius; yi <= blurRadius; ++yi) {
+    if(yi < 0){
+      continue;
+    }
+    sum += convert_uint4(rsGetElementAt_uchar4(inAllocation, x, y+yi));
+    ++count;
   }
 
-  int denominator = (blurRadius * 2 + 1);
-  pixelOut.r = r / denominator;
-  pixelOut.g = g / denominator;
-  pixelOut.b = b / denominator;
-  pixelOut.a = in.a; // Preserve alpha
+  for (int xi = -blurRadius; xi <= blurRadius; ++xi) {
+    if(xi < 0){
+      continue;
+    }
+    sum += convert_uint4(rsGetElementAt_uchar4(inAllocation, x+xi, y));
+    ++count;
+  }
 
-  return pixelOut;
+  return convert_uchar4(sum/count);
 }

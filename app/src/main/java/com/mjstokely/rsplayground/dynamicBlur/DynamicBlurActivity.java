@@ -60,7 +60,7 @@ public class DynamicBlurActivity extends AppCompatActivity {
         Single<RenderScript> rs = RsApplication.getInstance().Rs;
         mEventHandler = new EventHandler(provideRenderAllocation(rs,
                                                                  provideSurfaceSingle(binding.textureView)),
-                                         provideLetterBoxScript(input,
+                                         provideBlurScript(input,
                                                            rs));
     }
 
@@ -70,7 +70,7 @@ public class DynamicBlurActivity extends AppCompatActivity {
         mDisposable = mEventHandler.getRenders()
                                    .subscribe();
 
-        Flowable.intervalRange(1, 340, 0, 16, TimeUnit.MILLISECONDS)
+        Flowable.intervalRange(1, 340, 0, 80, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<Long>() {
                     @Override
